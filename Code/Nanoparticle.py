@@ -203,3 +203,6 @@ class Nanoparticle(BaseNanoparticle):
         numHeteroatomicBonds = self.getNumberOfHeteroatomicBonds()
 
         return np.array([numHeteroatomicBonds, numCornerAtoms, numEdgeAtoms, numTerraceAtoms])
+
+    def getKozlovEnergy(self, descriptors, symbol):
+        return np.dot(descriptors, self.getKozlovParameters(symbol))

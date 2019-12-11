@@ -2,8 +2,7 @@ import numpy as np
 
 
 class MutationOperator:
-    def __init__(self, max_exchanges, classifier):
-        self.classifier = classifier
+    def __init__(self, max_exchanges):
         self.max_exchanges = max_exchanges
         self.probability_distribution = np.array([1. / (n ** (3. / 2.)) for n in range(1, max_exchanges + 1, 1)])
         self.probability_distribution = self.probability_distribution / np.sum(self.probability_distribution)
@@ -26,4 +25,3 @@ class MutationOperator:
         particle.atoms.swapAtoms(zip(symbol2_indices, symbol1_indices))
 
         return particle
-
