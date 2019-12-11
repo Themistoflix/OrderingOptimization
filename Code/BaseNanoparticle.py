@@ -5,17 +5,17 @@ from ase import Atoms
 from ase.optimize import BFGS
 from asap3 import EMT
 
-from Code import BoundingBox
-from Code import CuttingPlaneUtilities as CPU
-from Code import IndexedAtoms
-from Code import NeighborList
+from Code.BoundingBox import BoundingBox
+from Code.CuttingPlaneUtilities import CuttingPlane
+from Code.IndexedAtoms import IndexedAtoms
+from Code.NeighborList import NeighborList
 
 
 class BaseNanoparticle:
     def __init__(self, lattice):
         self.lattice = lattice
-        self.atoms = IndexedAtoms.IndexedAtoms()
-        self.neighborList = NeighborList.NeighborList(lattice)
+        self.atoms = IndexedAtoms()
+        self.neighborList = NeighborList(lattice)
 
     def fromParticleData(self, atoms, neighborList=None):
         self.atoms = atoms
@@ -65,7 +65,7 @@ class BaseNanoparticle:
             l = maxCoordinates[1] - minCoordinates[1]
             h = maxCoordinates[2] - minCoordinates[2]
 
-            return BoundingBox.BoundingBox(w, l, h, minCoordinates)
+            return BoundingBox(w, l, h, minCoordinates)
 
         self.rectangularPrism(w, l, h)
         boundingBox = findBoundingBox()
@@ -96,7 +96,7 @@ class BaseNanoparticle:
             numberOfAtomsYetToBeRemoved = len(indicesOfCurrentAtoms) - finalNumberOfAtoms
             atomsToBeRemoved = set()
             while len(atomsToBeRemoved) < numberOfAtomsYetToBeRemoved:
-                cuttingPlane = CPU.CuttingPlane(cuttingPlane.anchor + cuttingPlane.normal * self.lattice.latticeConstant, cuttingPlane.normal)
+                cuttingPlane = CuttingPlane(cuttingPlane.anchor + cuttingPlane.normal * self.lattice.latticeConstant, cuttingPlane.normal)
                 atomsToBeKept, atomsToBeRemoved = cuttingPlane.splitAtomIndices(self.lattice, indicesOfCurrentAtoms)
 
             # remove atoms till the final number is reached "from the ground up"
@@ -189,7 +189,7 @@ class BaseNanoparticle:
         if atomIndices is None:
             return copy.deepcopy(self.atoms)
         else:
-            atoms = IndexedAtoms.IndexedAtoms()
+            atoms = IndexedAtoms()
             symbols = [self.atoms.getSymbol(index) for index in atomIndices]
 
             atoms.addAtoms(zip(atomIndices, symbols))

@@ -168,3 +168,38 @@ class Nanoparticle(BaseNanoparticle):
         numberOfAtomsWithSymbol2 = totalNumberOfAtoms - numberOfAtomsWithSymbol1
 
         self.randomChemicalOrdering(symbols, [numberOfAtomsWithSymbol1, numberOfAtomsWithSymbol2])
+
+    def getNumberOfHeteroatomicBonds(self):
+        numberOfHeteroatomicBonds = 0
+
+        if len(self.atoms.getSymbols()) == 2:
+            symbol = self.atoms.getSymbols()[0]
+        else:
+            return 0
+
+        for latticeIndexWithSymbol in self.atoms.getIndicesBySymbol(symbol):
+            neighborList = self.neighborList[latticeIndexWithSymbol]
+            for neighbor in neighborList:
+                symbolOfNeighbor = self.atoms.getSymbol(neighbor)
+
+                if symbol != symbolOfNeighbor:
+                    numberOfHeteroatomicBonds = numberOfHeteroatomicBonds + 1
+
+        return numberOfHeteroatomicBonds
+
+    def getKozlovParameters(self, symbol):
+        # coordination numbers from Kozlov et al. 2015
+        coordinationNumberCornerAtoms = [1, 2, 3, 4, 5, 6]
+        coordinationNumberEdgeAtoms = [7]
+        coordinationNumberTerraceAtoms = [9]
+
+        cornerAtoms = self.getAtomIndicesFromCoordinationNumbers(coordinationNumberCornerAtoms, symbol)
+        edgeAtoms = self.getAtomIndicesFromCoordinationNumbers(coordinationNumberEdgeAtoms, symbol)
+        terraceAtoms = self.getAtomIndicesFromCoordinationNumbers(coordinationNumberTerraceAtoms, symbol)
+
+        numCornerAtoms = len(cornerAtoms)
+        numEdgeAtoms = len(edgeAtoms)
+        numTerraceAtoms = len(terraceAtoms)
+        numHeteroatomicBonds = self.getNumberOfHeteroatomicBonds()
+
+        return np.array([numHeteroatomicBonds, numCornerAtoms, numEdgeAtoms, numTerraceAtoms])
