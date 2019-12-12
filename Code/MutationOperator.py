@@ -22,8 +22,7 @@ class MutationOperator:
         return particle, zip(symbol1_indices, symbol2_indices)
 
     def revert_mutation(self, particle, swaps):
-        symbol1_indices, symbol2_indices = zip(*swaps)
-        particle.atoms.swapAtoms(zip(symbol2_indices, symbol1_indices))
+        particle.atoms.swapAtoms(swaps)
 
         return particle
 
@@ -55,10 +54,9 @@ class MutationOperator:
             return energy_gains
 
         def expectation_value_of_dice(n):
-            return np.cumsum(np.array(range(n + 1))) / n
+            return (n + 1)/2
 
         energy_gains = compute_energy_gain_for_equal_env_swaps()
-
         features_as_index_lists = particle.getFeaturesAsIndexLists()
         n_distinct_environments = get_n_distinct_atomic_environments()
 
@@ -73,10 +71,12 @@ class MutationOperator:
         symbol2_feature_index = get_feature_index_of_other_element(symbol1_feature_index)
         max_swaps = min(len(features_as_index_lists[symbol1_feature_index]), len(features_as_index_lists[symbol2_feature_index]))
         n_swaps = np.random.randint(1, max_swaps + 1)  # randint upper limit is exclusive
-
+        print(max_swaps)
+        print(n_swaps)
         symbol1_indices = np.random.choice(features_as_index_lists[symbol1_feature_index], n_swaps, replace=False)
         symbol2_indices = np.random.choice(features_as_index_lists[symbol2_feature_index], n_swaps, replace=False)
-
+        print(symbol1_indices)
+        print(symbol2_indices)
         swaps = zip(symbol1_indices, symbol2_indices)
         particle.atoms.swapAtoms(swaps)
 
@@ -114,9 +114,3 @@ class MutationOperator:
         newParticle.atoms.transformAtoms(new_symbol2_atoms)
 
         return newParticle
-            
-
-
-
-
-
