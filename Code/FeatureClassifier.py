@@ -69,6 +69,7 @@ class KMeansClassifier(FeatureClassifier):
         for particle in training_set:
             bond_parameters = bond_parameters + particle.getBondParameters()
 
+        print("Starting kMeans")
         self.kMeans = KMeans(n_clusters=self.n_cluster, random_state=0).fit(bond_parameters)
 
 
