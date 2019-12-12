@@ -100,8 +100,11 @@ class MutationOperator:
             else:
                 differences.append(index)
 
+        if len(differences) == 0:
+            print("Equal!")
+
         # distribute the atoms among the differences while keeping the stoichiometry fixed
-        parent_stoichiometry = parent1.getStoichoimetry()
+        parent_stoichiometry = parent1.getStoichiometry()
         n_remaining_atoms_symbol1 = parent_stoichiometry[symbol1] - symbol1_occurences_equalities
         new_symbol1_indices = np.random.choice(differences, n_remaining_atoms_symbol1, replace=False)
         new_symbol2_indices = set(differences).difference(set(new_symbol1_indices))
