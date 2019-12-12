@@ -15,7 +15,6 @@ class Nanoparticle(BaseNanoparticle):
         self.bondParameters = dict()
         self.featuresAsIndexLists = list()
         self.featureVector = np.array([])
-
         self.l_max = l_max
 
     def getL_max(self):

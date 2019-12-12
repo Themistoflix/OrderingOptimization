@@ -68,12 +68,15 @@ class IndexedAtoms:
                 allAtomsOfOneKind.append(atomIndex)
                 self.indicesBySymbol[newSymbol] = allAtomsOfOneKind
 
-    def transformAtom(self, index, newSymbol):
-        oldSymbol = self.symbolByIndex[index]
+    def transformAtoms(self, newAtoms):
+        for atom in newAtoms:
+            index = atom[0]
+            newSymbol = atom[1]
+            oldSymbol = self.symbolByIndex[index]
 
-        self.symbolByIndex[index] = newSymbol
-        self.indicesBySymbol[oldSymbol].remove(index)
-        self.indicesBySymbol[newSymbol].append(index)
+            self.symbolByIndex[index] = newSymbol
+            self.indicesBySymbol[oldSymbol].remove(index)
+            self.indicesBySymbol[newSymbol].append(index)
 
     def getIndices(self):
         return list(self.symbolByIndex)

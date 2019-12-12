@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 class MutationOperator:
@@ -81,7 +82,38 @@ class MutationOperator:
 
         return particle, swaps
 
+    def mutation_crossover(self, parent1, parent2):  # this is for homotopes only!
+        # find differences and equalities in the ordering
+        parent_indices = parent1.atoms.getIndices()
 
+        differences = list()
+        equalitities = list()
+
+        symbol1 = parent1.atoms.getSymbols()[0]
+        symbol2 = parent1.atoms.getSymbols()[1]
+        symbol1_occurences_equalities = 0
+        for index in parent_indices:
+            if parent1.atoms.getSymbol(index) == parent2.atoms.getSymbol(index):
+                equalitities.append(index)
+                if parent1.atoms.getSymbol(index) == symbol1:
+                    symbol1_occurences_equalities += 1
+            else:
+                differences.append(index)
+
+        # distribute the atoms among the differences while keeping the stoichiometry fixed
+        parent_stoichiometry = parent1.getStoichoimetry()
+        n_remaining_atoms_symbol1 = parent_stoichiometry[symbol1] - symbol1_occurences_equalities
+        new_symbol1_indices = np.random.choice(differences, n_remaining_atoms_symbol1, replace=False)
+        new_symbol2_indices = set(differences).difference(set(new_symbol1_indices))
+
+        newParticle = copy.deepcopy(parent1)
+        new_symbol1_atoms = zip(new_symbol1_indices, [symbol1]*len(new_symbol1_indices))
+        new_symbol2_atoms = zip(new_symbol2_indices, [symbol2]*len(new_symbol2_indices))
+
+        newParticle.atoms.transformAtoms(new_symbol1_atoms)
+        newParticle.atoms.transformAtoms(new_symbol2_atoms)
+
+        return newParticle
             
 
 
