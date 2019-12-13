@@ -56,6 +56,9 @@ class MutationOperator:
         def expectation_value_of_dice(n):
             return (n + 1)/2
 
+        def drawFromGeometricDistribution(self, parameterGeometricDistribution):
+            return np.random.geometric(p=parameterGeometricDistribution, size=1)[0]
+
         energy_gains = compute_energy_gain_for_equal_env_swaps()
         features_as_index_lists = particle.getFeaturesAsIndexLists()
         n_distinct_environments = get_n_distinct_atomic_environments()
@@ -67,7 +70,8 @@ class MutationOperator:
             expected_energy_gain = expectation_value_of_dice(max_swaps)*energy_gains[symbol1_feature_index]
             expected_energy_gains.append(expected_energy_gain)
 
-        symbol1_feature_index = expected_energy_gains.index(max(expected_energy_gains))
+        expected_energy_gains.sort(reverse=True)
+        symbol1_feature_index = expected_energy_gains.index(expected_energy_gains[drawFromGeometricDistribution(0.4)])
         symbol2_feature_index = get_feature_index_of_other_element(symbol1_feature_index)
         max_swaps = min(len(features_as_index_lists[symbol1_feature_index]), len(features_as_index_lists[symbol2_feature_index]))
         n_swaps = np.random.randint(1, max_swaps + 1)  # randint upper limit is exclusive
