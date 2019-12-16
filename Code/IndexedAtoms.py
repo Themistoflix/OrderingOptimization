@@ -27,6 +27,13 @@ class IndexedAtoms:
             self.symbolByIndex.pop(index)
             self.indicesBySymbol[symbol].remove(index)
 
+    def getAtoms(self, indices=None):
+        if indices is None:
+            indices = self.getIndices()
+        symbols = [self.symbolByIndex[index] for index in indices]
+
+        return zip(indices, symbols)
+
     def clear(self):
         self.symbolByIndex.clear()
         self.indicesBySymbol.clear()

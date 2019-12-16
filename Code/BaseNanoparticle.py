@@ -16,13 +16,16 @@ class BaseNanoparticle:
         self.lattice = lattice
         self.atoms = IndexedAtoms()
         self.neighborList = NeighborList(lattice)
+        self.boundingBox = BoundingBox()
 
     def fromParticleData(self, atoms, neighborList=None):
         self.atoms = atoms
         if neighborList is None:
             self.constructNeighborList()
         else:
-            self.neighborList = neighborList
+            self.neighborList = neighborList()
+
+        self.constructBoundingBox()
 
     def addAtoms(self, atoms):
         self.atoms.addAtoms(atoms)
@@ -49,32 +52,14 @@ class BaseNanoparticle:
         self.constructNeighborList()
 
     def convexShape(self, numberOfAtomsOfEachKind, atomicSymbols, w, l, h, cuttingPlaneGenerator):
-        def findBoundingBox():
-            minCoordinates = np.array([1e10, 1e10, 1e10])
-            maxCoordinates = np.array([-1e10, -1e10, -1e10])
-
-            for latticeIndex in self.atoms.getIndices():
-                curPosition = self.lattice.getCartesianPositionFromIndex(latticeIndex)
-                for coordinate in range(3):
-                    if curPosition[coordinate] < minCoordinates[coordinate]:
-                        minCoordinates[coordinate] = curPosition[coordinate]
-                    if curPosition[coordinate] > maxCoordinates[coordinate]:
-                        maxCoordinates[coordinate] = curPosition[coordinate]
-
-            w = maxCoordinates[0] - minCoordinates[0]
-            l = maxCoordinates[1] - minCoordinates[1]
-            h = maxCoordinates[2] - minCoordinates[2]
-
-            return BoundingBox(w, l, h, minCoordinates)
-
         self.rectangularPrism(w, l, h)
-        boundingBox = findBoundingBox()
+        self.constructBoundingBox()
         indicesOfCurrentAtoms = set(self.atoms.getIndices())
 
         finalNumberOfAtoms = sum(numberOfAtomsOfEachKind)
         MAX_CUTTING_ATTEMPTS = 50
         currentCuttingAttempt = 0
-        cuttingPlaneGenerator.setCenter(boundingBox.getCenter())
+        cuttingPlaneGenerator.setCenter(self.boundingBox.get_center())
 
         while len(indicesOfCurrentAtoms) > finalNumberOfAtoms and currentCuttingAttempt < MAX_CUTTING_ATTEMPTS:
             # create cut plane
@@ -90,7 +75,7 @@ class BaseNanoparticle:
 
         if currentCuttingAttempt == MAX_CUTTING_ATTEMPTS:
             # place cutting plane parallel to one of the axes and at the anchor point
-            cuttingPlane = cuttingPlaneGenerator.createAxisParallelCuttingPlane(boundingBox.position)
+            cuttingPlane = cuttingPlaneGenerator.createAxisParallelCuttingPlane(self.boundingBox.position)
 
             # shift till too many atoms would get removed
             numberOfAtomsYetToBeRemoved = len(indicesOfCurrentAtoms) - finalNumberOfAtoms
@@ -127,7 +112,7 @@ class BaseNanoparticle:
             startIndex = outerAtoms[0]
             symbol = self.atoms.getSymbol(startIndex)
 
-            surfaceVacancies  = list(self.getSurfaceVacancies())
+            surfaceVacancies = list(self.getSurfaceVacancies())
             surfaceVacancies.sort(key=lambda x: self.getNumberOfAtomicNeighbors(x), reverse=True)
 
             endIndex = surfaceVacancies[0]
@@ -137,6 +122,9 @@ class BaseNanoparticle:
 
     def constructNeighborList(self):
         self.neighborList.construct(self.atoms.getIndices())
+
+    def constructBoundingBox(self):
+        self.boundingBox.construct(self.lattice, self.atoms.getIndices())
 
     def getCornerAtomIndices(self, symbol=None):
         cornerCoordinationNumbers = [1, 2, 3, 4]
@@ -186,15 +174,7 @@ class BaseNanoparticle:
         return self.neighborList.getCoordinationNumber(latticeIndex)
 
     def getAtoms(self, atomIndices=None):
-        if atomIndices is None:
-            return copy.deepcopy(self.atoms)
-        else:
-            atoms = IndexedAtoms()
-            symbols = [self.atoms.getSymbol(index) for index in atomIndices]
-
-            atoms.addAtoms(zip(atomIndices, symbols))
-
-            return copy.deepcopy(atoms)
+        return copy.deepcopy(self.atoms.getAtoms(atomIndices))
 
     def getNeighborList(self):
         return self.neighborList

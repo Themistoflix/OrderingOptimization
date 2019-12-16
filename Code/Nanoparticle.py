@@ -131,77 +131,46 @@ class Nanoparticle(BaseNanoparticle):
             if latticeIndex in latticeIndices:
                 return feature
 
-    def kozlovSphere(self, height, symbols, ratio):
-        boundingBoxAnchor = self.lattice.getAnchorIndexOfCenteredBox(2 * height, 2 * height, 2 * height)
-        lowerTipPosition = boundingBoxAnchor + np.array([height, height, 0])
+    def enforceStoichiometry(self, stoichiometry):
+        atomNumberDifference = self.atoms.getCount() - sum(stoichiometry.values())
 
-        if not self.lattice.isValidLatticePosition(lowerTipPosition):
-            lowerTipPosition[2] = lowerTipPosition[2] + 1
+        if atomNumberDifference > 0:
+            self.removeUndercoordinatedAtoms(atomNumberDifference)
 
-        layerBasisVector1 = np.array([1, 1, 0])
-        layerBasisVector2 = np.array([-1, 1, 0])
-        for zPosition in range(height):
-            layerWidth = zPosition + 1
-            lowerLayerOffset = np.array([0, -zPosition, zPosition])
-            upperLayerOffset = np.array([0, -zPosition, 2 * height - 2 - zPosition])
+        elif atomNumberDifference < 0:
+            self.fillHighCoordinatedSurfaceVacancies(-atomNumberDifference)
+            
+        if self.getStoichiometry() != stoichiometry:
+            self.adjustAtomicRatios(stoichiometry)
 
-            lowerLayerStartPosition = lowerTipPosition + lowerLayerOffset
-            upperLayerStartPosition = lowerTipPosition + upperLayerOffset
-            for width in range(layerWidth):
-                for length in range(layerWidth):
-                    currentPositionLowerLayer = lowerLayerStartPosition + width * layerBasisVector1 + length * layerBasisVector2
-                    currentPositionUpperLayer = upperLayerStartPosition + width * layerBasisVector1 + length * layerBasisVector2
+    def fillHighCoordinatedSurfaceVacancies(self, count):
+        for atom in range(count):
+            surfaceVacancies = list(self.getSurfaceVacancies())
+            surfaceVacancies.sort(key=self.getNumberOfAtomicNeighbors, reverse=True)
 
-                    lowerLayerIndex = self.lattice.getIndexFromLatticePosition(currentPositionLowerLayer)
-                    upperLayerIndex = self.lattice.getIndexFromLatticePosition(currentPositionUpperLayer)
+            index = surfaceVacancies[0]
+            symbol = np.random.choice(self.atoms.getSymbols(), 1)[0]
 
-                    self.atoms.addAtoms([(lowerLayerIndex, 'X'), (upperLayerIndex, 'X')])
+            self.addAtoms([(index, symbol)])
 
-        self.constructNeighborList()
-        corners = self.getAtomIndicesFromCoordinationNumbers([4])
+    def removeUndercoordinatedAtoms(self, count):
+        for atom in range(count):
+            mostUndercoordinatedAtoms = self.getAtomIndicesFromCoordinationNumbers(range(9))
+            mostUndercoordinatedAtoms.sort(key=self.getCoordinationNumber)
 
-        self.removeAtoms(corners)
+            index = mostUndercoordinatedAtoms[0]
+            self.removeAtoms([index])
 
-        totalNumberOfAtoms = self.atoms.getCount()
-        numberOfAtomsWithSymbol1 = int(totalNumberOfAtoms * ratio)
-        numberOfAtomsWithSymbol2 = totalNumberOfAtoms - numberOfAtomsWithSymbol1
+    def adjustAtomicRatios(self, stoichiometry):
+        element1 = self.atoms.getSymbols()[0]
+        element2 = self.atoms.getSymbols()[1]
+        n_differences_element1 = self.getStoichiometry()[element1] - stoichiometry[element1]
 
-        self.randomChemicalOrdering(symbols, [numberOfAtomsWithSymbol1, numberOfAtomsWithSymbol2])
+        if n_differences_element1 < 0:
+            indices_to_transform_to_element1 = np.random.choice(self.atoms.getIndicesBySymbol(element2), -n_differences_element1, replace=False)
+            self.atoms.transformAtoms(zip(indices_to_transform_to_element1, [element1]*(-n_differences_element1)))
+        elif n_differences_element1 > 0:
+            indices_to_transform_to_element2 = np.random.choice(self.atoms.getIndicesBySymbol(element1), n_differences_element1, replace=False)
+            self.atoms.transformAtoms(zip(indices_to_transform_to_element2, [element2]*n_differences_element1))
 
-    def getNumberOfHeteroatomicBonds(self):
-        numberOfHeteroatomicBonds = 0
 
-        if len(self.atoms.getSymbols()) == 2:
-            symbol = self.atoms.getSymbols()[0]
-        else:
-            return 0
-
-        for latticeIndexWithSymbol in self.atoms.getIndicesBySymbol(symbol):
-            neighborList = self.neighborList[latticeIndexWithSymbol]
-            for neighbor in neighborList:
-                symbolOfNeighbor = self.atoms.getSymbol(neighbor)
-
-                if symbol != symbolOfNeighbor:
-                    numberOfHeteroatomicBonds = numberOfHeteroatomicBonds + 1
-
-        return numberOfHeteroatomicBonds
-
-    def getKozlovParameters(self, symbol):
-        # coordination numbers from Kozlov et al. 2015
-        coordinationNumberCornerAtoms = [1, 2, 3, 4, 5, 6]
-        coordinationNumberEdgeAtoms = [7]
-        coordinationNumberTerraceAtoms = [9]
-
-        cornerAtoms = self.getAtomIndicesFromCoordinationNumbers(coordinationNumberCornerAtoms, symbol)
-        edgeAtoms = self.getAtomIndicesFromCoordinationNumbers(coordinationNumberEdgeAtoms, symbol)
-        terraceAtoms = self.getAtomIndicesFromCoordinationNumbers(coordinationNumberTerraceAtoms, symbol)
-
-        numCornerAtoms = len(cornerAtoms)
-        numEdgeAtoms = len(edgeAtoms)
-        numTerraceAtoms = len(terraceAtoms)
-        numHeteroatomicBonds = self.getNumberOfHeteroatomicBonds()
-
-        return np.array([numHeteroatomicBonds, numCornerAtoms, numEdgeAtoms, numTerraceAtoms])
-
-    def getKozlovEnergy(self, descriptors, symbol):
-        return np.dot(descriptors, self.getKozlovParameters(symbol))
