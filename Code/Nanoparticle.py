@@ -9,6 +9,7 @@ class Nanoparticle(BaseNanoparticle):
     def __init__(self, lattice, l_max):
         BaseNanoparticle.__init__(self, lattice)
 
+        self.energies = dict()
         self.EMTEnergy = math.inf
         self.RREnergy = math.inf
 
@@ -17,8 +18,16 @@ class Nanoparticle(BaseNanoparticle):
         self.featureVector = np.array([])
         self.l_max = l_max
 
+        self.mixingParameters = dict()
+
     def getL_max(self):
         return self.l_max
+
+    def set_energy(self, key, energy):
+        self.energies[key] = energy
+
+    def get_energy(self, key):
+        return self.energies[key]
 
     def computeBondParameter(self, latticeIndex):
         def mapOntoUnitSphere(cartesianCoords):
@@ -42,8 +51,8 @@ class Nanoparticle(BaseNanoparticle):
             in an fcc lattice and returns the spherical harmonic coefficients of the expansion
             """
 
-            neighborIndices = self.getAtomicNeighbors(latticeIndex)
-            atomicSymbols = np.array([self.atoms.getSymbol(index) for index in neighborIndices])
+            neighborIndices = self.get_atomic_neighbors(latticeIndex)
+            atomicSymbols = np.array([self.atoms.get_symbol(index) for index in neighborIndices])
             cartesianCoords = [self.lattice.getCartesianPositionFromIndex(index) for index in neighborIndices]
 
             centerAtomPosition = self.lattice.getCartesianPositionFromIndex(latticeIndex)
@@ -54,7 +63,7 @@ class Nanoparticle(BaseNanoparticle):
             # The density of each species is expanded separately
             expansionCoefficients = []
             numberOfNeighbors = len(atomicSymbols)
-            for element in sorted(self.atoms.getSymbols()):
+            for element in sorted(self.atoms.get_symbols()):
                 elementDensity = np.zeros(numberOfNeighbors)
                 elementDensity[np.where(atomicSymbols == element)] += 1
                 Clms_element = []
@@ -70,8 +79,8 @@ class Nanoparticle(BaseNanoparticle):
 
         SHExpansionCoefficients = sphericalHarmonicsExpansion()
         bondParameters = []
-        for elementIndex, element in enumerate(sorted(self.atoms.getSymbols())):
-            N_elementAtoms = len(list(filter(lambda x: self.atoms.getSymbol(x) == element, self.getAtomicNeighbors(latticeIndex))))
+        for elementIndex, element in enumerate(sorted(self.atoms.get_symbols())):
+            N_elementAtoms = len(list(filter(lambda x: self.atoms.get_symbol(x) == element, self.get_atomic_neighbors(latticeIndex))))
             Qls_element = []
             i = 0
             for l in range(self.l_max + 1):
@@ -92,7 +101,7 @@ class Nanoparticle(BaseNanoparticle):
         return self.bondParameters[latticeIndex]
 
     def computeBondParameters(self):
-        for latticeIndex in self.atoms.getIndices():
+        for latticeIndex in self.atoms.get_indices():
             self.bondParameters[latticeIndex] = self.computeBondParameter(latticeIndex)
 
     def getBondParameters(self):
@@ -108,11 +117,35 @@ class Nanoparticle(BaseNanoparticle):
         return self.featuresAsIndexLists
 
     def computeEMTEnergy(self, steps):
-        self.EMTEnergy = self.getPotentialEnergy(steps)
+        self.EMTEnergy = self.get_potential_energy(steps)
         return self.EMTEnergy
 
     def getEMTEnergy(self):
         return self.EMTEnergy
+
+    def computeMixingParameters(self):
+        for symbol in self.get_stoichiometry():
+            pureParticle = Nanoparticle(self.lattice, self.l_max)
+            pureParticle.add_atoms(list(zip(self.atoms.get_indices(), [symbol] * self.atoms.get_n_atoms())))
+            pureParticle.computeEMTEnergy(20)
+            self.mixingParameters[symbol] = pureParticle.getEMTEnergy()
+
+        return self.mixingParameters
+
+    def setMixingParameters(self, mixingParameters):
+        self.mixingParameters = mixingParameters
+
+    def getMixingParameters(self):
+        return self.mixingParameters
+
+    def getMixingEnergy(self):
+        E_mixing = self.EMTEnergy
+        numberOfAtoms = self.atoms.get_n_atoms()
+
+        for symbol in self.get_stoichiometry():
+            E_mixing -= self.mixingParameters[symbol] * self.get_stoichiometry()[symbol] / numberOfAtoms
+
+        return E_mixing
 
     def computeRREnergy(self, ridge):
         self.RREnergy = np.dot(np.transpose(ridge.coef_), self.getFeatureVector())
@@ -132,7 +165,7 @@ class Nanoparticle(BaseNanoparticle):
                 return feature
 
     def enforceStoichiometry(self, stoichiometry):
-        atomNumberDifference = self.atoms.getCount() - sum(stoichiometry.values())
+        atomNumberDifference = self.atoms.get_n_atoms() - sum(stoichiometry.values())
 
         if atomNumberDifference > 0:
             self.removeUndercoordinatedAtoms(atomNumberDifference)
@@ -140,37 +173,98 @@ class Nanoparticle(BaseNanoparticle):
         elif atomNumberDifference < 0:
             self.fillHighCoordinatedSurfaceVacancies(-atomNumberDifference)
             
-        if self.getStoichiometry() != stoichiometry:
+        if self.get_stoichiometry() != stoichiometry:
             self.adjustAtomicRatios(stoichiometry)
 
     def fillHighCoordinatedSurfaceVacancies(self, count):
         for atom in range(count):
-            surfaceVacancies = list(self.getSurfaceVacancies())
-            surfaceVacancies.sort(key=self.getNumberOfAtomicNeighbors, reverse=True)
+            surfaceVacancies = list(self.get_surface_vacancies())
+            surfaceVacancies.sort(key=self.get_n_atomic_neighbors, reverse=True)
 
             index = surfaceVacancies[0]
-            symbol = np.random.choice(self.atoms.getSymbols(), 1)[0]
+            symbol = np.random.choice(self.atoms.get_symbols(), 1)[0]
 
-            self.addAtoms([(index, symbol)])
+            self.add_atoms([(index, symbol)])
 
     def removeUndercoordinatedAtoms(self, count):
         for atom in range(count):
-            mostUndercoordinatedAtoms = self.getAtomIndicesFromCoordinationNumbers(range(9))
-            mostUndercoordinatedAtoms.sort(key=self.getCoordinationNumber)
+            mostUndercoordinatedAtoms = self.get_atom_indices_from_coordination_number(range(9))
+            mostUndercoordinatedAtoms.sort(key=self.get_coordination_number)
 
             index = mostUndercoordinatedAtoms[0]
-            self.removeAtoms([index])
+            self.remove_atoms([index])
 
     def adjustAtomicRatios(self, stoichiometry):
-        element1 = self.atoms.getSymbols()[0]
-        element2 = self.atoms.getSymbols()[1]
-        n_differences_element1 = self.getStoichiometry()[element1] - stoichiometry[element1]
+        element1 = self.atoms.get_symbols()[0]
+        element2 = self.atoms.get_symbols()[1]
+        n_differences_element1 = self.get_stoichiometry()[element1] - stoichiometry[element1]
 
         if n_differences_element1 < 0:
-            indices_to_transform_to_element1 = np.random.choice(self.atoms.getIndicesBySymbol(element2), -n_differences_element1, replace=False)
-            self.atoms.transformAtoms(zip(indices_to_transform_to_element1, [element1]*(-n_differences_element1)))
+            indices_to_transform_to_element1 = np.random.choice(self.atoms.get_indices_by_symbol(element2), -n_differences_element1, replace=False)
+            self.atoms.transform_atoms(zip(indices_to_transform_to_element1, [element1] * (-n_differences_element1)))
         elif n_differences_element1 > 0:
-            indices_to_transform_to_element2 = np.random.choice(self.atoms.getIndicesBySymbol(element1), n_differences_element1, replace=False)
-            self.atoms.transformAtoms(zip(indices_to_transform_to_element2, [element2]*n_differences_element1))
+            indices_to_transform_to_element2 = np.random.choice(self.atoms.get_indices_by_symbol(element1), n_differences_element1, replace=False)
+            self.atoms.transform_atoms(zip(indices_to_transform_to_element2, [element2] * n_differences_element1))
 
+    def octahedron(self, height, symbol):
+        boundingBoxAnchor = self.lattice.getAnchorIndexOfCenteredBox(2 * height, 2 * height, 2 * height)
+        lowerTipPosition = boundingBoxAnchor + np.array([height, height, 0])
+
+        if not self.lattice.isValidLatticePosition(lowerTipPosition):
+            lowerTipPosition[2] = lowerTipPosition[2] + 1
+
+        layerBasisVector1 = np.array([1, 1, 0])
+        layerBasisVector2 = np.array([-1, 1, 0])
+        for zPosition in range(height):
+            layerWidth = zPosition + 1
+            lowerLayerOffset = np.array([0, -zPosition, zPosition])
+            upperLayerOffset = np.array([0, -zPosition, 2 * height - 2 - zPosition])
+
+            lowerLayerStartPosition = lowerTipPosition + lowerLayerOffset
+            upperLayerStartPosition = lowerTipPosition + upperLayerOffset
+            for width in range(layerWidth):
+                for length in range(layerWidth):
+                    currentPositionLowerLayer = lowerLayerStartPosition + width * layerBasisVector1 + length * layerBasisVector2
+                    currentPositionUpperLayer = upperLayerStartPosition + width * layerBasisVector1 + length * layerBasisVector2
+
+                    lowerLayerIndex = self.lattice.getIndexFromLatticePosition(currentPositionLowerLayer)
+                    upperLayerIndex = self.lattice.getIndexFromLatticePosition(currentPositionUpperLayer)
+
+                    self.atoms.add_atoms([(lowerLayerIndex, symbol), (upperLayerIndex, symbol)])
+
+        self.construct_neighbor_list()
+
+        self.construct_bounding_box()
+
+    def kozlovSphere(self, height, symbols, numberOfAtomsEachKind):
+        boundingBoxAnchor = self.lattice.getAnchorIndexOfCenteredBox(2 * height, 2 * height, 2 * height)
+        lowerTipPosition = boundingBoxAnchor + np.array([height, height, 0])
+
+        if not self.lattice.isValidLatticePosition(lowerTipPosition):
+            lowerTipPosition[2] = lowerTipPosition[2] + 1
+
+        layerBasisVector1 = np.array([1, 1, 0])
+        layerBasisVector2 = np.array([-1, 1, 0])
+        for zPosition in range(height):
+            layerWidth = zPosition + 1
+            lowerLayerOffset = np.array([0, -zPosition, zPosition])
+            upperLayerOffset = np.array([0, -zPosition, 2 * height - 2 - zPosition])
+
+            lowerLayerStartPosition = lowerTipPosition + lowerLayerOffset
+            upperLayerStartPosition = lowerTipPosition + upperLayerOffset
+            for width in range(layerWidth):
+                for length in range(layerWidth):
+                    currentPositionLowerLayer = lowerLayerStartPosition + width * layerBasisVector1 + length * layerBasisVector2
+                    currentPositionUpperLayer = upperLayerStartPosition + width * layerBasisVector1 + length * layerBasisVector2
+
+                    lowerLayerIndex = self.lattice.getIndexFromLatticePosition(currentPositionLowerLayer)
+                    upperLayerIndex = self.lattice.getIndexFromLatticePosition(currentPositionUpperLayer)
+
+                    self.atoms.add_atoms([(lowerLayerIndex, 'X'), (upperLayerIndex, 'X')])
+
+        self.construct_neighbor_list()
+        corners = self.get_atom_indices_from_coordination_number([4])
+
+        self.remove_atoms(corners)
+        self.random_ordering(symbols, numberOfAtomsEachKind)
 

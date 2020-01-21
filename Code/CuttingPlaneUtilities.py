@@ -39,7 +39,7 @@ class CuttingPlaneGenerator:
 
 
 class SphericalCuttingPlaneGenerator(CuttingPlaneGenerator):
-    def __init__(self, minRadius, maxRadius, center=None):
+    def __init__(self, minRadius, maxRadius, center=0.0):
         super().__init__(center)
         self.minRadius = minRadius
         self.maxRadius = maxRadius

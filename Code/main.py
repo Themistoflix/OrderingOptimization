@@ -1,7 +1,7 @@
 import Code.Nanoparticle as NP
 import Code.FCCLattice as FCC
-import Code.CuttingPlaneUtilities as CPG
-import Code.SurfaceRattleOperator as SRO
+import Code.CuttingPlaneUtilities as CPU
+import Code.GlobalFeatureClassifier as GFC
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -99,29 +99,20 @@ def runAutobagSimulation(N_steps, startPopulation, kmeans, ridge,
 
 if __name__ == '__main__':
     lattice = FCC.FCCLattice(15, 15, 15, 2)
-    np.random.seed(23)
+    cutting_plane_generator = CPU.SphericalCuttingPlaneGenerator(3., 11.)
 
-    numberOfParticles = 25
-    l_max = 5
-    n_cluster = 5
+    training_set = list()
+    simple_classifier = GFC.SimpleFeatureClassifier()
 
-    startParticles = list()
-    cuttingPlaneGenerator = CPG.SphericalCuttingPlaneGenerator(6., 9.)
-    for i in range(numberOfParticles):
-        print('particle no: {0}'.format(i))
-        p = NP.Nanoparticle(lattice)
-        p.convexShape([80, 80], ['Ag', 'Cu'], 9, 9, 9, cuttingPlaneGenerator)
-        startParticles.append(p)
+    population_size = 20
+    for i in range(population_size):
+        particle = NP.Nanoparticle(lattice, 5)
+        particle.convex_shape([42, 43], ['Pt', 'Au'], 9, 9, 9, cutting_plane_generator)
+        #simple_classifier.compute_feature_vector(particle)
 
-    kmeans = findClusters(startParticles, n_cluster, l_max)
-    ridge = ridgeRegression(startParticles, kmeans)
-
-    startParticle = NP.Nanoparticle(lattice)
-    startParticle.convexShape([80, 80], ['Ag', 'Cu'], 9, 9, 9, cuttingPlaneGenerator)
-
-    startParticles_copy = copy.deepcopy(startParticles)
-
-    acceptedParticles, allEMTEnergies, allRREnergies = runAutobagSimulation(20, startParticles_copy, kmeans, ridge,
-                                                                            startParticle, False)
+        particle.optimize_coordination_numbers()
+        particle.computeEMTEnergy(steps=20)
+        simple_classifier.compute_feature_vector(particle)
+        training_set.append(particle)
 
 
