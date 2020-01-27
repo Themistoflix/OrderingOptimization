@@ -12,7 +12,7 @@ class CuttingPlane:
         atomsInNegativeSubspace = set()
 
         for latticeIndex in atomIndices:
-            position = lattice.getCartesianPositionFromIndex(latticeIndex)
+            position = lattice.get_cartesian_position_from_index(latticeIndex)
             if np.dot((position - self.anchor), self.normal) >= 0.0:
                 atomsInPositiveSubspace.add(latticeIndex)
             else:
@@ -24,13 +24,13 @@ class CuttingPlaneGenerator:
     def __init__(self, center):
         self.center = center
 
-    def generateNewCuttingPlane(self):
+    def generate_new_cutting_plane(self):
         raise NotImplementedError()
 
-    def setCenter(self, center):
+    def set_center(self, center):
         self.center = center
 
-    def createAxisParallelCuttingPlane(self, position):
+    def create_axis_parallel_cutting_plane(self, position):
         anchor = position
         normal = np.array([0, 0, 0])
         normal[random.randrange(2)] = 1.0
@@ -44,7 +44,7 @@ class SphericalCuttingPlaneGenerator(CuttingPlaneGenerator):
         self.minRadius = minRadius
         self.maxRadius = maxRadius
 
-    def generateNewCuttingPlane(self):
+    def generate_new_cutting_plane(self):
         normal = np.array([random.random() * 2 - 1, random.random() * 2 - 1, random.random() * 2 - 1])
         normal = normal / np.linalg.norm(normal)
         anchor = normal * (self.minRadius + random.random() * (self.maxRadius - self.minRadius))

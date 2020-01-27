@@ -9,35 +9,35 @@ class NeighborList:
     def __setitem__(self, key, value):
         self.list[key] = value
 
-    def construct(self, latticeIndices):
-        for latticeIndex in latticeIndices:
-            nearestLatticeNeighbors = self.lattice.getNearestNeighbors(latticeIndex)
-            nearestNeighbors = set()
-            for neighbor in nearestLatticeNeighbors:
-                if neighbor in latticeIndices:
-                    nearestNeighbors.add(neighbor)
+    def construct(self, lattice_indices):
+        for lattice_index in lattice_indices:
+            nearest_lattice_neighbors = self.lattice.get_nearest_neighbors(lattice_index)
+            nearest_neighbors = set()
+            for neighbor in nearest_lattice_neighbors:
+                if neighbor in lattice_indices:
+                    nearest_neighbors.add(neighbor)
 
-            self.list[latticeIndex] = nearestNeighbors
+            self.list[lattice_index] = nearest_neighbors
 
-    def addAtoms(self, latticeIndices):
-        allAtoms = list(self.list.keys())
-        for latticeIndex in latticeIndices:
-            nearestNeighbors = set()
-            nearestLatticeNeighbors = self.lattice.getNearestNeighbors(latticeIndex)
-            for neighbor in nearestLatticeNeighbors:
-                if neighbor in allAtoms:
-                    nearestNeighbors.add(neighbor)
+    def add_atoms(self, lattice_indices):
+        all_atoms = list(self.list.keys())
+        for latticeIndex in lattice_indices:
+            nearest_neighbors = set()
+            nearest_lattice_neighbors = self.lattice.get_nearest_neighbors(latticeIndex)
+            for neighbor in nearest_lattice_neighbors:
+                if neighbor in all_atoms:
+                    nearest_neighbors.add(neighbor)
                     self.list[neighbor].add(latticeIndex)
 
-            self.list[latticeIndex] = nearestNeighbors
+            self.list[latticeIndex] = nearest_neighbors
 
-    def removeAtoms(self, latticeIndices):
-        for latticeIndex in latticeIndices:
-            neighbors = self.list[latticeIndex]
+    def remove_atoms(self, lattice_indices):
+        for lattice_index in lattice_indices:
+            neighbors = self.list[lattice_index]
             for neighbor in neighbors:
-                self.list[neighbor].remove(latticeIndex)
+                self.list[neighbor].remove(lattice_index)
 
-            del self.list[latticeIndex]
+            del self.list[lattice_index]
 
-    def getCoordinationNumber(self, latticeIndex):
-        return len(self.list[latticeIndex])
+    def get_coordination_number(self, lattice_index):
+        return len(self.list[lattice_index])

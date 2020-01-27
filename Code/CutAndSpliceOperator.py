@@ -7,12 +7,12 @@ class CutAndSpliceOperator:
         self.cutting_plane_generator = cutting_plane_generator
 
     def cut_and_splice(self, particle1, particle2):
-        self.cutting_plane_generator.setCenter(particle1.boundingBox.get_center())
+        self.cutting_plane_generator.set_center(particle1.bounding_box.get_center())
         common_lattice = particle1.lattice
 
         # make sure that we actually cut
         while True:
-            cutting_plane = self.cutting_plane_generator.generateNewCuttingPlane()
+            cutting_plane = self.cutting_plane_generator.generate_new_cutting_plane()
             atom_indices_in_positive_subspace, _ = cutting_plane.splitAtomIndices(common_lattice, particle1.atoms.get_indices())
             _, atom_indices_in_negative_subspace = cutting_plane.splitAtomIndices(common_lattice, particle2.atoms.get_indices())
 
@@ -23,7 +23,7 @@ class CutAndSpliceOperator:
         new_atom_data.add_atoms(particle1.get_atoms(atom_indices_in_positive_subspace))
         new_atom_data.add_atoms(particle2.get_atoms(atom_indices_in_negative_subspace))
 
-        new_particle = NP.Nanoparticle(common_lattice, particle1.getL_max())
+        new_particle = NP.Nanoparticle(common_lattice)
         new_particle.from_particle_data(new_atom_data)
 
         # old_stoichiometry = particle1.getStoichiometry()

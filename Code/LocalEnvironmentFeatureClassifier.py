@@ -29,7 +29,7 @@ class LocalEnvironmentFeatureClassifier:
         n_features = self.compute_n_features(particle)
         feature_vector = np.array([len(particle.getFeaturesAsIndexLists()[feature]) for feature in range(n_features)])
 
-        particle.setFeatureVector(feature_vector)
+        particle.set_feature_vector(feature_vector)
 
     def compute_n_features(self, particle):
         raise NotImplementedError

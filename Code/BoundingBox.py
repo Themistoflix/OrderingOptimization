@@ -17,7 +17,7 @@ class BoundingBox:
         max_coordinates = np.array([-1e10, -1e10, -1e10])
 
         for lattice_index in atom_indices:
-            cur_position = lattice.getCartesianPositionFromIndex(lattice_index)
+            cur_position = lattice.get_cartesian_position_from_index(lattice_index)
             for coordinate in range(3):
                 if cur_position[coordinate] < min_coordinates[coordinate]:
                     min_coordinates[coordinate] = cur_position[coordinate]

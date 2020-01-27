@@ -14,16 +14,16 @@ class EnergyCalculator:
 
 
 class EMTCalculator(EnergyCalculator):
-    def __init__(self, fmax = 0.01, steps=20):
+    def __init__(self, fmax=0.01, steps=20):
         EnergyCalculator.__init__(self)
-        self.fmax = 0.01
+        self.fmax = fmax
         self.steps = steps
         self.energy_key = 'EMT'
 
     def compute_energy(self, particle):
-        cell_width = particle.lattice.width * particle.lattice.latticeConstant
-        cell_length = particle.lattice.length * particle.lattice.latticeConstant
-        cell_height = particle.lattice.height * particle.lattice.latticeConstant
+        cell_width = particle.lattice.width * particle.lattice.lattice_constant
+        cell_length = particle.lattice.length * particle.lattice.lattice_constant
+        cell_height = particle.lattice.height * particle.lattice.lattice_constant
 
         atoms = particle.get_ASE_atoms()
         atoms.set_cell(np.array([[cell_width, 0, 0], [0, cell_length, 0], [0, 0, cell_height]]))
@@ -56,14 +56,19 @@ class GPRCalculator(EnergyCalculator):
         self.GPR.fit(feature_vectors, energies)
 
     def compute_energy(self, particle):
-        energy = self.GPR.predict([particle.get_feature_vector()])
+        energy = self.GPR.predict([particle.get_feature_vector()])[0]
         particle.set_energy(self.energy_key, energy)
 
 
 class MixingEnergyCalculator(EnergyCalculator):
     def __init__(self, mixing_parameters=None):
         EnergyCalculator.__init__(self)
-        self.mixing_parameters = mixing_parameters
+
+        if mixing_parameters is None:
+            self.mixing_parameters = dict()
+        else:
+            self.mixing_parameters = mixing_parameters
+
         self.emt_calculator = EMTCalculator()
         self.energy_key = 'Mixing Energy'
 

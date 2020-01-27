@@ -1,24 +1,19 @@
 import numpy as np
+from collections import defaultdict
 
 
 class IndexedAtoms:
     def __init__(self):
         self.symbol_by_index = dict()
-        self.indices_by_symbol = dict()
+        self.indices_by_symbol = defaultdict(lambda: [])
 
     def add_atoms(self, atoms):
         for atom in atoms:
             index = atom[0]
             symbol = atom[1]
-            self.symbol_by_index[index] = symbol
 
-            if symbol in self.indices_by_symbol:
-                same_symbol_atoms = self.indices_by_symbol[symbol]
-                same_symbol_atoms.append(index)
-            else:
-                same_symbol_atoms = list()
-                same_symbol_atoms.append(index)
-                self.indices_by_symbol[symbol] = same_symbol_atoms
+            self.symbol_by_index[index] = symbol
+            self.indices_by_symbol[symbol].append(index)
 
     def remove_atoms(self, indices):
         for index in indices:
@@ -89,19 +84,33 @@ class IndexedAtoms:
         return list(self.symbol_by_index)
 
     def get_symbols(self):
-        return list(self.indices_by_symbol)
+        symbols = list()
+        for symbol in self.indices_by_symbol:
+            if not self.indices_by_symbol[symbol] is []:
+                symbols.append(symbol)
+
+        return symbols
 
     def get_symbol(self, index):
         return self.symbol_by_index[index]
 
     def get_indices_by_symbol(self, symbol):
-        return self.indices_by_symbol[symbol]
+        if symbol in self.indices_by_symbol.keys():
+            return self.indices_by_symbol[symbol]
+        else:
+            return []
 
     def get_n_atoms(self):
         return len(self.symbol_by_index)
 
+    def get_n_atoms_of_symbol(self, symbol):
+        if symbol in self.indices_by_symbol.keys():
+            return len(self.indices_by_symbol[symbol])
+        else:
+            return 0
+
     def get_stoichiometry(self):
-        stoichiometry = dict()
+        stoichiometry = defaultdict(lambda: 0)
         for symbol in self.indices_by_symbol:
             stoichiometry[symbol] = len(self.indices_by_symbol[symbol])
 

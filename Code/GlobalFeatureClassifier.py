@@ -21,7 +21,7 @@ class SimpleFeatureClassifier(GlobalFeatureClassifier):
         n_atoms = particle.atoms.get_n_atoms()
 
         M = particle.get_stoichiometry()[self.symbol_a] * 0.1
-        particle.setFeatureVector(np.array([n_aa_bonds/n_atoms, n_bb_bonds/n_atoms, n_ab_bonds/n_atoms, M]))
+        particle.set_feature_vector(np.array([n_aa_bonds / n_atoms, n_bb_bonds / n_atoms, n_ab_bonds / n_atoms, M]))
 
     def compute_respective_bond_counts(self, particle):
         n_aa_bonds = 0
@@ -29,8 +29,8 @@ class SimpleFeatureClassifier(GlobalFeatureClassifier):
         n_bb_bonds = 0
 
         for lattice_index_with_symbol_a in particle.atoms.get_indices_by_symbol(self.symbol_a):
-            neighborList = particle.neighborList[lattice_index_with_symbol_a]
-            for neighbor in neighborList:
+            neighbor_list = particle.neighbor_list[lattice_index_with_symbol_a]
+            for neighbor in neighbor_list:
                 symbol_neighbor = particle.atoms.get_symbol(neighbor)
 
                 if self.symbol_a != symbol_neighbor:
@@ -39,8 +39,8 @@ class SimpleFeatureClassifier(GlobalFeatureClassifier):
                     n_aa_bonds += 1
 
         for lattice_index_with_symbol_b in particle.atoms.get_indices_by_symbol(self.symbol_b):
-            neighborList = particle.neighborList[lattice_index_with_symbol_b]
-            for neighbor in neighborList:
+            neighbor_list = particle.neighbor_list[lattice_index_with_symbol_b]
+            for neighbor in neighbor_list:
                 symbol_neighbor = particle.atoms.get_symbol(neighbor)
 
                 if self.symbol_b == symbol_neighbor:

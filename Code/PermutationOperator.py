@@ -8,6 +8,10 @@ class PermutationOperator:
 
     def random_permutation(self, particle):
         new_particle = copy.deepcopy(particle)
+        if new_particle.is_pure():
+            print("Pure particle! No permutation possible")
+            return new_particle
+
         symbols = new_particle.atoms.get_symbols()
         symbol1 = symbols[0]
         symbol2 = symbols[1]
